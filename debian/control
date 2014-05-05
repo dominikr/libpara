@@ -1,7 +1,7 @@
 Source: libpara
 Section: unknown
 Priority: extra
-Maintainer: Dominik Russenberger <dominik.russenberger@gmail.com
+Maintainer: Dominik Russenberger <dominik.russenberger@gmail.com>
 Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.2
 Homepage: <insert the upstream URL, if relevant>

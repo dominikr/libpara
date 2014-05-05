@@ -12,7 +12,7 @@ __para_fifo_reader(){
 	while true; do
 		while read COMMAND; do
 			__para_exec $COMMAND
-			if [ "$COMMAND" = "DONE" ]; then
+			if [ "x$COMMAND" = "x$PARA_DONE_COMMAND" ]; then
 				break 2
 			fi
 		done < "$PARA_FIFO"
@@ -30,6 +30,11 @@ para(){
 
 para_init(){
 	PARA_DIR=$(mktemp -d)
+	readonly PARA_DIR
+	PARA_SLEEP=0.1
+	readonly PARA_SLEEP
+	PARA_DONE_COMMAND='kjhgajkfghudfaDONE'
+	readonly PARA_DONE_COMMAND
 	PARA_COUNT=0
 	PARA_RUNNING=0
 	PARA_LAST_SHOWN=1
@@ -99,12 +104,14 @@ para_init(){
 		fi
 	fi
 
+	readonly PARA_INORDER
+
 	if [ ! "$PARA_MAX" ]; then
 		PARA_MAX=$(nproc)
 	fi
 
-	if [ "$PARA_MAX" = "0" ]; then
-		PARA_FIFO=''
+	if [ "$PARA_MAX" -eq "0" ]; then
+		readonly PARA_FIFO=''
 		PARA_SINGLE=1
 		if [ "$PARA_AUTOSHOW" ]; then
 			PARA_AUTOSHOW=''
@@ -114,14 +121,15 @@ para_init(){
 			para(){ __para_single $@; }
 		fi
 	elif [ "$PARA_FIFO" ]; then
-		PARA_FIFO="$PARA_DIR/fifo"
+		readonly PARA_FIFO="$PARA_DIR/fifo"
 		eval 'para(){ echo "$@" > '$PARA_FIFO'; }'
 		__para_fifo_reader &
 		PARA_FIFO_PID=$!
 	else
-		PARA_FIFO=''
+		readonly PARA_FIFO=''
 		para(){ __para_exec $@; }
 	fi
+	readonly PARA_SINGLE
 
 	if [ "$PARA_AUTOSHOW" ]; then
 		para_show_async
@@ -138,14 +146,14 @@ para_show(){
 			LIST="$LIST $PARA_DIR/$PARA_LAST_SHOWN.done"
 			PARA_LAST_SHOWN=$(( PARA_LAST_SHOWN + 1 ))
 		done
-		[ "$LIST" = "" ] && return
+		[ "x$LIST" = "x" ] && return
 		cat $LIST
 		rm $LIST
 
 	else
 		set -- $PARA_DIR/*.done
 		# globbed anything?
-		if [ "$1" = "$PARA_DIR/*.done" ]; then
+		if [ "x$1" = "x$PARA_DIR/*.done" ]; then
 			return
 		fi
 		if [ "$#" -gt 0 ]; then
@@ -165,7 +173,7 @@ para_show_async(){
 para_show_all(){
 	while true; do
 		para_show
-		sleep 0.1
+		sleep "${PARA_SLEEP}"
 		if [ "${PARA_DONE_COUNT-}" ]; then
 			if [ "$PARA_LAST_SHOWN" -ge "$PARA_DONE_COUNT" ]; then
 				__para_debug "SHOW END $PARA_LAST_SHOWN $PARA_DONE_COUNT"
@@ -182,10 +190,10 @@ para_show_all(){
 para_done(){
 	# FIFO gets closed after done, so we install a lock
 	[ "$PARA_DONE_LOCK" ] && return
-	PARA_DONE_LOCK=1
+	readonly PARA_DONE_LOCK=1
 	# pseudomode 'single' does not need a done command
 	[ "$PARA_SINGLE" ] && return
-	para DONE
+	para "${PARA_DONE_COMMAND}"
 }
 
 # exit, as fast as possible
@@ -207,7 +215,7 @@ para_cleanup(){
 
 __para_running(){
 	set -- $PARA_DIR/*.run
-	if [ "$1" = "$PARA_DIR/*.run" ]; then
+	if [ "x$1" = "x$PARA_DIR/*.run" ]; then
 		PARA_RUNNING=0
 	else
 		PARA_RUNNING=$#
@@ -219,7 +227,7 @@ __para_single(){
 	local -r PARA_FILE="$PARA_DIR/$PARA_COUNT"
 	local COMMAND="$*"
 
-	if [ "$COMMAND" = "DONE" ]; then
+	if [ "x$COMMAND" = "x$PARA_DONE_COMMAND" ]; then
 		__para_debug "PARA_FINAL_COUNT $PARA_COUNT"
 		echo "$PARA_COUNT" > "$PARA_DIR/COUNT"
 		return
@@ -234,7 +242,7 @@ __para_exec(){
 	local PARA_FILE="$PARA_DIR/$PARA_COUNT"
 	local COMMAND="$*"
 
-	if [ "$COMMAND" = "DONE" ]; then
+	if [ "x$COMMAND" = "x$PARA_DONE_COMMAND" ]; then
 		__para_debug "PARA_FINAL_COUNT $PARA_COUNT"
 		echo "$PARA_COUNT" > "$PARA_DIR/COUNT"
 		return
@@ -242,7 +250,7 @@ __para_exec(){
 
 	__para_running
 	while [ "$PARA_RUNNING" -gt "$PARA_MAX" ]; do
-		sleep 0.1
+		sleep "${PARA_SLEEP}"
 		__para_running
 	done
 	
