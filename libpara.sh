@@ -7,12 +7,12 @@ __para_debug(){
 }
 
 __para_fifo_reader(){
-	local COMMAND
+	#local PARA_COMMAND
 	mkfifo -m 600 "$PARA_FIFO"
 	while true; do
-		while read COMMAND; do
-			__para_exec $COMMAND
-			if [ "x$COMMAND" = "x$PARA_DONE_COMMAND" ]; then
+		while read PARA_COMMAND; do
+			__para_exec $PARA_COMMAND
+			if [ "x$PARA_COMMAND" = "x$PARA_DONE_COMMAND" ]; then
 				break 2
 			fi
 		done < "$PARA_FIFO"
@@ -91,7 +91,6 @@ para_init(){
 	if [ "$PARA_AUTOCLEAN" ]; then
 		# can't use pipe:
 		# pipe opens a subshell
-		# traps are cleared in subshell
 		trap > "$PARA_DIR/trap"
 		if grep -qE "(EXIT|INT|TERM)$" "$PARA_DIR/trap"; then
 			echo "ERROR: Can't enable autoclean, traps already set" 1>&2
@@ -141,14 +140,14 @@ para_init(){
 # show new program outputs, nonblocking
 para_show(){
 	if [ "$PARA_INORDER" ]; then
-		local LIST=''
+		PARA_LIST=''
 		while [ -e "$PARA_DIR/$PARA_LAST_SHOWN.done" ]; do
-			LIST="$LIST $PARA_DIR/$PARA_LAST_SHOWN.done"
+			PARA_LIST="$PARA_LIST $PARA_DIR/$PARA_LAST_SHOWN.done"
 			PARA_LAST_SHOWN=$(( PARA_LAST_SHOWN + 1 ))
 		done
-		[ "x$LIST" = "x" ] && return
-		cat $LIST
-		rm $LIST
+		[ "x$PARA_LIST" = "x" ] && return
+		cat $PARA_LIST
+		rm $PARA_LIST
 
 	else
 		set -- $PARA_DIR/*.done
@@ -224,25 +223,28 @@ __para_running(){
 
 __para_single(){
 	PARA_COUNT=$(( PARA_COUNT + 1 ))
-	local -r PARA_FILE="$PARA_DIR/$PARA_COUNT"
-	local COMMAND="$*"
+	#local -r PARA_FILE="$PARA_DIR/$PARA_COUNT"
+	PARA_FILE="$PARA_DIR/$PARA_COUNT"
+	#local PARA_COMMAND="$*"
+	PARA_COMMAND="$*"
 
-	if [ "x$COMMAND" = "x$PARA_DONE_COMMAND" ]; then
+	if [ "x$PARA_COMMAND" = "x$PARA_DONE_COMMAND" ]; then
 		__para_debug "PARA_FINAL_COUNT $PARA_COUNT"
 		echo "$PARA_COUNT" > "$PARA_DIR/COUNT"
 		return
 	fi
 
-	$COMMAND > $PARA_FILE.run; mv $PARA_FILE.run $PARA_FILE.done
+	$PARA_COMMAND > $PARA_FILE.run; mv $PARA_FILE.run $PARA_FILE.done
 }
 
 __para_exec(){
-	#set -x
 	PARA_COUNT=$(( PARA_COUNT + 1 ))
-	local PARA_FILE="$PARA_DIR/$PARA_COUNT"
-	local COMMAND="$*"
+	#local PARA_FILE="$PARA_DIR/$PARA_COUNT"
+	PARA_FILE="$PARA_DIR/$PARA_COUNT"
+	#local PARA_COMMAND="$*"
+	PARA_COMMAND="$*"
 
-	if [ "x$COMMAND" = "x$PARA_DONE_COMMAND" ]; then
+	if [ "x$PARA_COMMAND" = "x$PARA_DONE_COMMAND" ]; then
 		__para_debug "PARA_FINAL_COUNT $PARA_COUNT"
 		echo "$PARA_COUNT" > "$PARA_DIR/COUNT"
 		return
@@ -254,5 +256,5 @@ __para_exec(){
 		__para_running
 	done
 	
-	( $COMMAND > $PARA_FILE.run; mv $PARA_FILE.run $PARA_FILE.done 2>/dev/null ) &
+	( $PARA_COMMAND > $PARA_FILE.run; mv $PARA_FILE.run $PARA_FILE.done 2>/dev/null ) &
 }

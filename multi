@@ -1,0 +1,8 @@
+#!/bin/sh -e
+[ "$#" = "0" ] && exit
+
+for shell in bash dash ksh mksh static-sh posh yash "yash -o posixly-correct" pdksh zsh jsh hush ash
+do
+	echo $shell:
+	$shell $@ || true
+done
