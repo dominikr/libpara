@@ -1,5 +1,4 @@
-#!/bin/bash
-PARA_DEBUG=0
+PARA_DEBUG=1
 __para_debug(){
 	if [ "$PARA_DEBUG" = 1 ]; then
 		echo $*
@@ -8,7 +7,6 @@ __para_debug(){
 
 __para_fifo_reader(){
 	#local PARA_COMMAND
-	mkfifo -m 600 "$PARA_FIFO"
 	while true; do
 		while read PARA_COMMAND; do
 			__para_exec $PARA_COMMAND
@@ -91,6 +89,7 @@ para_init(){
 	if [ "$PARA_AUTOCLEAN" ]; then
 		# can't use pipe:
 		# pipe opens a subshell
+		# traps are cleared in subshell
 		trap > "$PARA_DIR/trap"
 		if grep -qE "(EXIT|INT|TERM)$" "$PARA_DIR/trap"; then
 			echo "ERROR: Can't enable autoclean, traps already set" 1>&2
@@ -122,6 +121,7 @@ para_init(){
 	elif [ "$PARA_FIFO" ]; then
 		readonly PARA_FIFO="$PARA_DIR/fifo"
 		eval 'para(){ echo "$@" > '$PARA_FIFO'; }'
+		mkfifo -m 600 "$PARA_FIFO"
 		__para_fifo_reader &
 		PARA_FIFO_PID=$!
 	else
