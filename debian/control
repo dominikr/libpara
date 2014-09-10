@@ -1,15 +1,16 @@
 Source: libpara
-Section: unknown
+Section: libs
 Priority: extra
 Maintainer: Dominik Russenberger <dominik.russenberger@gmail.com>
 Build-Depends: debhelper (>= 8.0.0)
 Standards-Version: 3.9.2
-Homepage: <insert the upstream URL, if relevant>
-#Vcs-Git: git://git.debian.org/collab-maint/libpara.git
-#Vcs-Browser: http://git.debian.org/?p=collab-maint/libpara.git;a=summary
+Homepage: https://github.com/dominikr/libpara
+Vcs-Git: https://github.com/dominikr/libpara.git
+Vcs-Browser: https://github.com/dominikr/libpara
 
 Package: libpara
 Architecture: all
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Description: library for parallel shell programming
+ libpara allows you to easily code parallel loops in shell
+ Should work in any POSIX-compatible shell.
